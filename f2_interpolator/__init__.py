@@ -19,15 +19,15 @@ class f2_interpolator(verilog,thesdk):
         self.Rs_high = 8*160e6;    # sampling frequency
         self.Rs_low=20e6
         self.BB_bandwidth=0.45
-        self.iptr_A = refptr();
+        self.iptr_A = IO();
         self.model='py';           #can be set externally, but is not propagated
         self.export_scala=False    # Be careful with this
         self.scales=[1,1,1,1]
         self.cic3shift=0
         self._filters = [];
-        self._Z = refptr();
-        self.zeroptr=refptr()
-        self.zeroptr.Value=np.zeros((1,1))
+        self._Z = IO();
+        self.zeroptr=IO()
+        self.zeroptr.Data=np.zeros((1,1))
         if len(arg)>=1:
             parent=arg[0]
             self.copy_propval(parent,self.proplist)
@@ -68,16 +68,16 @@ class f2_interpolator(verilog,thesdk):
             self.generate_interpolator()
             for i in range(len(self._filters)):
                 self._filters[i].run()
-                self._filters[i]._Z.Value=(self._filters[i]._Z.Value*self.scales[i]).reshape(-1,1)
-            out=self._filters[-1]._Z.Value
+                self._filters[i]._Z.Data=(self._filters[i]._Z.Data*self.scales[i]).reshape(-1,1)
+            out=self._filters[-1]._Z.Data
         else:
-            out=self.iptr_A.Value
+            out=self.iptr_A.Data
         if self.par:
             self.queue.put(out)
         maximum=np.amax([np.abs(np.real(out)), np.abs(np.imag(out))])
         str="Output signal range is %i" %(maximum)
-        self.print_log({'type':'I', 'msg': str})
-        self._Z.Value=out
+        self.print_log(type='I', msg=str)
+        self._Z.Data=out
 
     def generate_interpolator(self,**kwargs):
        n=kwargs.get('n',np.array([40,8,6]))
@@ -114,13 +114,13 @@ class f2_interpolator(verilog,thesdk):
         #3 interpolate by 8, 4, interpolate by more
         M=self.Rs_high/self.Rs_low
         if (M%8!=0) and (M!=4) and (M!=2) and (M!=1):
-            self.print_log({'type':'F', 'msg':"Interpolation ratio is not valid. Must be 1,2,4,8 or multiple of 8"})
+            self.print_log(type='F', msg="Interpolation ratio is not valid. Must be 1,2,4,8 or multiple of 8")
         else:
             if M<=8:
                 mode=int(np.log2(M))
             else:
              mode=int(4)
-        self.print_log({'type':'I', 'msg':"Interpolation ratio is set to %i corresponding to mode %i" %(M,mode)})
+        self.print_log(type='I', msg="Interpolation ratio is set to %i corresponding to mode %i" %(M,mode))
         return mode
 
 if __name__=="__main__":
